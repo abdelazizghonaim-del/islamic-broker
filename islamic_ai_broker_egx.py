@@ -198,7 +198,7 @@ def T(en, ar):
 class DataManager:
     """Data fetching for EGX100 stocks.
     This class fetches historical and current price data for Egyptian stocks.
-    Data is pulled from Mubasher EGX or other open sources as available.
+    Data is pulled from EGX-AI-API for OHLCV data.
     """
     def __init__(self):
         self.cache_dir = os.path.join(tempfile.gettempdir(), "islamic_ai_cache")
@@ -207,19 +207,37 @@ class DataManager:
     @st.cache_data(ttl=300)
     def get_market_data(_self, symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
         """
-        Fetches historical price data for EGX-listed stocks.
+        Fetches historical price data for EGX-listed stocks from EGX-AI-API.
         - Returns a DataFrame with columns: Open, High, Low, Close, Volume
-        - Uses the Mubasher EGX endpoint for demo (replace with official EGX API as needed).
+        - Uses the EGX-AI-API endpoint for demo (replace with official EGX provider for production).
         """
         try:
-            # Sample Mubasher EGX endpoint (replace with official EGX provider for production)
-            # This is a demo URL! Replace with your own API or scraping logic.
-            url = f"https://www.mubasher.info/services/markets/EGX/stocks/{symbol}/historical?period={period}&interval={interval}"
+            # Example: Use the EGX-AI-API endpoint for OHLCV data
+            url = f"https://egx-ai-api.onrender.com/api/v1/ohlcv/{symbol}?period={period}&interval={interval}"
             resp = requests.get(url)
-            data = resp.json()["historical_prices"] if resp.status_code == 200 else []
-
+            if resp.status_code == 200:
+                data = resp.json().get("data", [])
+            else:
+                data = []
             if not data:
                 return pd.DataFrame()
+            df = pd.DataFrame(data)
+            df = df.rename(columns={
+                "open": "Open",
+                "high": "High",
+                "low": "Low",
+                "close": "Close",
+                "volume": "Volume",
+                "date": "Date"
+            })
+            df['Date'] = pd.to_datetime(df['Date'])
+            df.set_index('Date', inplace=True)
+            required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            df = df[required_cols].dropna()
+            return df
+        except Exception as e:
+            st.error(f"Error fetching data for {symbol} from EGX-AI-API: {str(e)}")
+            return pd.DataFrame()
 
             df = pd.DataFrame(data)
             # Ensure column names
