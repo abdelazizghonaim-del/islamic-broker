@@ -1,5 +1,5 @@
 # islamic_ai_broker_pro.py
-# 🕌 Islamic AI Broker Pro - Next Generation Trading Platform
+# 🕌 Islamic AI Broker Pro - Egyptian Market Edition - Next Generation Trading Platform
 # ================================================================
 # Advanced Islamic-compliant trading system with AI predictions,
 # comprehensive Sharia screening, and professional risk management
@@ -97,7 +97,7 @@ PROHIBITED_SECTORS = {
 # ================================================================
 
 st.set_page_config(
-    page_title="🕌 Islamic AI Broker Pro",
+    page_title="🕌 Islamic AI Broker Pro - EGX Edition",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -911,7 +911,7 @@ def main():
     st.markdown("""
     <div class="main-header">
         <h1 class="main-title">🕌 Islamic AI Broker Pro</h1>
-        <p class="main-subtitle">Advanced Sharia-Compliant Trading Platform with AI Intelligence</p>
+        <p class="main-subtitle">Advanced Sharia-Compliant Trading Platform for Egyptian Stock Exchange (EGX) with AI Intelligence</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -938,7 +938,7 @@ def main():
         )
         
         # Time period
-        period = st.selectbox("Time Period", ["1mo", "2mo", "3mo"], index=2)
+        period = st.selectbox("Time Period", ["3mo", "6mo", "1y", "2y", "5y"], index=2)
         
         # Trading parameters
         st.subheader("⚙️ Trading Config")
@@ -1330,16 +1330,31 @@ def main():
                 else:
                     recommendation_factors.append(f"🟡 **RSI Neutral** ({rsi:.1f}) - No strong signal")
 
-            # Factor 4: Price trend
-            recent_returns = df['Close'].pct_change().tail(5).mean()
-            if recent_returns > 0.02:
+            # Factor 4: Price trend (longer-term for 1-year analysis)
+            recent_returns = df['Close'].pct_change().tail(20).mean()  # 20-day average for better trend analysis
+            if recent_returns > 0.015:
                 recommendation_score += 10
-                recommendation_factors.append(f"📈 **Strong Uptrend** - Average 5-day return: {recent_returns:.1%}")
-            elif recent_returns < -0.02:
+                recommendation_factors.append(f"📈 **Strong Uptrend** - Average 20-day return: {recent_returns:.1%}")
+            elif recent_returns < -0.015:
                 recommendation_score -= 10
-                recommendation_factors.append(f"📉 **Downtrend** - Average 5-day return: {recent_returns:.1%}")
+                recommendation_factors.append(f"📉 **Downtrend** - Average 20-day return: {recent_returns:.1%}")
             else:
-                recommendation_factors.append(f"➡️ **Sideways Movement** - Average 5-day return: {recent_returns:.1%}")
+                recommendation_factors.append(f"➡️ **Sideways Movement** - Average 20-day return: {recent_returns:.1%}")
+
+            # Factor 5: Long-term performance (1-year analysis)
+            if len(df) > 252:  # If we have at least 1 year of data
+                yearly_return = ((df['Close'].iloc[-1] / df['Close'].iloc[-252]) - 1) * 100
+                if yearly_return > 15:
+                    recommendation_score += 15
+                    recommendation_factors.append(f"🚀 **Excellent 1-Year Performance** - Return: {yearly_return:.1%}")
+                elif yearly_return > 5:
+                    recommendation_score += 5
+                    recommendation_factors.append(f"📈 **Good 1-Year Performance** - Return: {yearly_return:.1%}")
+                elif yearly_return < -15:
+                    recommendation_score -= 15
+                    recommendation_factors.append(f"📉 **Poor 1-Year Performance** - Return: {yearly_return:.1%}")
+                else:
+                    recommendation_factors.append(f"➡️ **Moderate 1-Year Performance** - Return: {yearly_return:.1%}")
 
             # Final recommendation
             if recommendation_score >= 50:
@@ -1421,14 +1436,29 @@ def main():
             else:
                 st.success("✅ Low volatility. This is a relatively stable investment.")
 
-            st.markdown("**💡 Investment Horizon:**")
-            st.write("Based on the 3-month maximum analysis period, this recommendation is suitable for:")
+            st.markdown("**💡 Investment Horizon (1-Year Analysis):**")
+            st.write("Based on the comprehensive 1-year analysis, this recommendation is suitable for:")
             st.write("   • **Short-term trading** (1-4 weeks)")
             st.write("   • **Swing trading** (1-3 months)")
-            st.write("   • **Islamic portfolio rebalancing**")
+            st.write("   • **Medium-term investing** (3-12 months)")
+            st.write("   • **Long-term Islamic portfolio building**")
+            st.write("   • **Annual portfolio rebalancing**")
+
+            # Show 1-year performance summary
+            if len(df) > 252:
+                st.markdown("**📈 1-Year Performance Summary:**")
+                yearly_high = df['Close'].tail(252).max()
+                yearly_low = df['Close'].tail(252).min()
+                current_price = df['Close'].iloc[-1]
+                yearly_return = ((current_price / df['Close'].iloc[-252]) - 1) * 100
+
+                st.write(f"   • **1-Year Return**: {yearly_return:.1%}")
+                st.write(f"   • **52-Week High**: {yearly_high:.2f} EGP")
+                st.write(f"   • **52-Week Low**: {yearly_low:.2f} EGP")
+                st.write(f"   • **Current Position**: {((current_price - yearly_low) / (yearly_high - yearly_low) * 100):.1f}% of 52-week range")
 
             st.markdown("---")
-            st.markdown("**⚠️ Disclaimer**: This analysis is for educational purposes only. Always consult with qualified Islamic financial advisors and conduct your own research before making investment decisions.")
+            st.markdown("**⚠️ Disclaimer**: This analysis is for educational purposes only. The 1-year analysis provides comprehensive insights but past performance doesn't guarantee future results. Always consult with qualified Islamic financial advisors and conduct your own research before making investment decisions.")
 
         st.header("📈 Strategy Performance")
         
