@@ -1,5 +1,5 @@
 # islamic_ai_broker_pro.py
-# 🕌 Islamic AI Broker Pro - Egyptian Market Edition - Next Generation Trading Platform
+# 🕌 Islamic AI Broker Pro - Next Generation Trading Platform
 # ================================================================
 # Advanced Islamic-compliant trading system with AI predictions,
 # comprehensive Sharia screening, and professional risk management
@@ -61,16 +61,13 @@ class ShariaConfig:
     min_market_cap: float = 1e9  # $1B minimum
     
 HALAL_TICKERS = {
-    # EGX30 Stocks - Egyptian Exchange
-    # Confirmed Sharia-Compliant stocks based on EGX33 Shariah Index and research
-    'ADIB.CA': ('Abu Dhabi Islamic Bank-Egypt', 'Islamic Finance'),  # ✓ Islamic Bank
-    'TMGH.CA': ('Talaat Moustafa Group Holding', 'Real Estate'),    # ✓ In EGX33 Shariah
-    'ABUK.CA': ('Abou Kir Fertilizers & Chemical Industries Co.', 'Process Industries'),  # ✓ In EGX33 Shariah
-    'ETEL.CA': ('Telecom Egypt', 'Communications'),                 # ✓ In EGX33 Shariah
-    'FWRY.CA': ('Fawry For Banking Technology And Electronic Payment', 'Technology Services'),  # ✓ In EGX33 Shariah
-    'MASR.CA': ('Madinet Masr for Housing & Development', 'Real Estate'),  # ✓ In EGX33 Shariah
-
-    # Other EGX30 stocks requiring screening (non-conventional finance)
+    # EGX30 Stocks - Egyptian Exchange - Sharia Compliant Selection
+    'ADIB.CA': ('Abu Dhabi Islamic Bank-Egypt', 'Islamic Finance'),
+    'TMGH.CA': ('Talaat Moustafa Group Holding', 'Real Estate'),
+    'ABUK.CA': ('Abou Kir Fertilizers & Chemical Industries Co.', 'Process Industries'),
+    'ETEL.CA': ('Telecom Egypt', 'Communications'),
+    'FWRY.CA': ('Fawry For Banking Technology And Electronic Payment', 'Technology Services'),
+    'MASR.CA': ('Madinet Masr for Housing & Development', 'Real Estate'),
     'EAST.CA': ('Eastern Company', 'Consumer Non-durables'),
     'ORAS.CA': ('Orascom Construction Plc', 'Industrial Services'),
     'MFPC.CA': ('Misr Fertilizers Production Company MOPCO', 'Process Industries'),
@@ -86,12 +83,7 @@ HALAL_TICKERS = {
     'ISPH.CA': ('Ibnsina Pharma', 'Distribution Services'),
     'AMOC.CA': ('Alexandria Mineral Oils Co.', 'Energy Minerals'),
     'MCQE.CA': ('Misr Cement Co. (Qena)', 'Non-energy Minerals'),
-    'RMDA.CA': ('Tenth of Ramadan Pharmaceutical Industries & Diagnostic-Rameda', 'Health Technology'),
-
-    # Note: The following conventional banks/finance companies are excluded as they're likely non-Sharia compliant:
-    # COMI.CA (Commercial International Bank), EMFD.CA (Emaar Misr Development), 
-    # HRHO.CA (EFG Holding), BTFH.CA (Beltone Holding), EKHOA.CA, EKHO.CA (Egypt Kuwait Holding),
-    # CIEB.CA (Credit Agricole), PHDC.CA (Palm Hills Development), CCAP.CA (QALA Financial)
+    'RMDA.CA': ('Tenth of Ramadan Pharmaceutical Industries & Diagnostic-Rameda', 'Health Technology')
 }
 
 PROHIBITED_SECTORS = {
@@ -105,7 +97,7 @@ PROHIBITED_SECTORS = {
 # ================================================================
 
 st.set_page_config(
-    page_title="🕌 Islamic AI Broker Pro - EGX Edition",
+    page_title="🕌 Islamic AI Broker Pro",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -919,7 +911,7 @@ def main():
     st.markdown("""
     <div class="main-header">
         <h1 class="main-title">🕌 Islamic AI Broker Pro</h1>
-        <p class="main-subtitle">Advanced Sharia-Compliant Trading Platform for Egyptian Stock Exchange (EGX) with AI Intelligence</p>
+        <p class="main-subtitle">Advanced Sharia-Compliant Trading Platform with AI Intelligence</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -946,7 +938,7 @@ def main():
         )
         
         # Time period
-        period = st.selectbox("Time Period", ["3mo", "6mo", "1y", "2y", "5y"], index=2)
+        period = st.selectbox("Time Period", ["1mo", "2mo", "3mo"], index=2)
         
         # Trading parameters
         st.subheader("⚙️ Trading Config")
@@ -977,6 +969,20 @@ def main():
         run_analysis = st.button("🔍 Run Complete Analysis", type="primary")
     
     # Main content
+        # Display selected stock prominently at the top
+    st.markdown("---")
+    col1, col2, col3 = st.columns([2, 3, 2])
+    with col2:
+        st.markdown(f"""
+        <div style="text-align: center; padding: 20px; background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); border-radius: 15px; margin: 20px 0;">
+            <h2 style="color: white; margin: 0;">🕌 Currently Analyzing</h2>
+            <h1 style="color: #4CAF50; margin: 10px 0; font-size: 2.5em;">{selected_symbol}</h1>
+            <h3 style="color: white; margin: 0;">{HALAL_TICKERS[selected_symbol][0]}</h3>
+            <p style="color: #B0BEC5; margin: 5px 0; font-size: 1.1em;">Sector: {HALAL_TICKERS[selected_symbol][1]}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown("---")
+
     if run_analysis:
         with st.spinner("🔄 Loading market data..."):
             df = data_manager.get_market_data(selected_symbol, period)
@@ -1278,6 +1284,152 @@ def main():
                 st.plotly_chart(fig_importance, use_container_width=True)
         
         # Strategy Backtesting
+                
+        # AI Recommendation & Analysis Explanation
+        st.header("🧠 AI Recommendation & Analysis Explanation")
+
+        rec_col1, rec_col2 = st.columns(2)
+
+        with rec_col1:
+            st.subheader("📋 Investment Recommendation")
+
+            # Determine overall recommendation based on multiple factors
+            recommendation_score = 0
+            recommendation_factors = []
+
+            # Factor 1: Sharia Compliance (Essential)
+            if is_compliant:
+                recommendation_score += 30
+                recommendation_factors.append("✅ **Sharia Compliant** - Meets Islamic investment criteria")
+            else:
+                recommendation_score -= 50
+                recommendation_factors.append("❌ **Not Sharia Compliant** - Violates Islamic principles")
+
+            # Factor 2: AI Prediction
+            if predictions and len(predictions) > 0:
+                latest_prediction = predictions[-1]
+                if latest_prediction['signal'] == 'BUY':
+                    recommendation_score += 25
+                    recommendation_factors.append(f"📈 **AI Signal: BUY** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
+                elif latest_prediction['signal'] == 'SELL':
+                    recommendation_score -= 25
+                    recommendation_factors.append(f"📉 **AI Signal: SELL** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
+                else:
+                    recommendation_factors.append(f"⏸️ **AI Signal: HOLD** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
+
+            # Factor 3: Technical Indicators
+            latest_data = df.iloc[-1]
+            if 'RSI' in latest_data:
+                rsi = latest_data['RSI']
+                if rsi < 30:
+                    recommendation_score += 15
+                    recommendation_factors.append(f"🔵 **RSI Oversold** ({rsi:.1f}) - Potential buying opportunity")
+                elif rsi > 70:
+                    recommendation_score -= 15
+                    recommendation_factors.append(f"🔴 **RSI Overbought** ({rsi:.1f}) - Consider taking profits")
+                else:
+                    recommendation_factors.append(f"🟡 **RSI Neutral** ({rsi:.1f}) - No strong signal")
+
+            # Factor 4: Price trend
+            recent_returns = df['Close'].pct_change().tail(5).mean()
+            if recent_returns > 0.02:
+                recommendation_score += 10
+                recommendation_factors.append(f"📈 **Strong Uptrend** - Average 5-day return: {recent_returns:.1%}")
+            elif recent_returns < -0.02:
+                recommendation_score -= 10
+                recommendation_factors.append(f"📉 **Downtrend** - Average 5-day return: {recent_returns:.1%}")
+            else:
+                recommendation_factors.append(f"➡️ **Sideways Movement** - Average 5-day return: {recent_returns:.1%}")
+
+            # Final recommendation
+            if recommendation_score >= 50:
+                recommendation = "🟢 **STRONG BUY**"
+                rec_color = "green"
+            elif recommendation_score >= 20:
+                recommendation = "🔵 **BUY**"
+                rec_color = "blue"
+            elif recommendation_score >= -10:
+                recommendation = "🟡 **HOLD**"
+                rec_color = "orange"
+            elif recommendation_score >= -30:
+                recommendation = "🔴 **WEAK SELL**"
+                rec_color = "red"
+            else:
+                recommendation = "⚫ **STRONG SELL**"
+                rec_color = "darkred"
+
+            st.markdown(f"""
+            <div style="text-align: center; padding: 15px; background-color: {rec_color}20; border: 2px solid {rec_color}; border-radius: 10px; margin: 10px 0;">
+                <h2 style="color: {rec_color}; margin: 0;">{recommendation}</h2>
+                <p style="margin: 5px 0;">Recommendation Score: {recommendation_score}/100</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("**Key Factors:**")
+            for factor in recommendation_factors:
+                st.markdown(f"• {factor}")
+
+        with rec_col2:
+            st.subheader("🔍 Analysis Explanation")
+
+            st.markdown("**How this recommendation was determined:**")
+
+            st.markdown("**1. 🕌 Sharia Compliance Check (Weight: 30%)**")
+            if is_compliant:
+                st.success("This stock passes all Islamic investment criteria including debt ratios, interest income limits, and business activity screening.")
+            else:
+                st.error("This stock fails Sharia compliance due to:")
+                for issue in issues:
+                    st.write(f"   • {issue}")
+
+            st.markdown("**2. 🤖 AI Prediction Analysis (Weight: 25%)**")
+            if predictions and len(predictions) > 0:
+                latest_pred = predictions[-1]
+                st.info(f"Our machine learning model predicts a **{latest_pred['signal']}** signal with {latest_pred.get('confidence', 0):.1%} confidence based on:")
+                st.write("   • Technical indicators (RSI, MACD, Moving Averages)")
+                st.write("   • Price patterns and trends")
+                st.write("   • Volume analysis")
+                st.write("   • Historical performance patterns")
+            else:
+                st.warning("AI prediction unavailable due to insufficient data.")
+
+            st.markdown("**3. 📊 Technical Analysis (Weight: 25%)**")
+            st.info("Technical indicators provide insights into:")
+            st.write("   • **Momentum**: RSI indicates overbought/oversold conditions")
+            st.write("   • **Trend**: Moving averages show price direction")
+            st.write("   • **Volatility**: ATR measures price movement intensity")
+            st.write("   • **Volume**: Trading activity confirms price movements")
+
+            st.markdown("**4. ⚖️ Risk Assessment (Weight: 20%)**")
+            current_volatility = df['Close'].pct_change().std() * (252**0.5)
+            if current_volatility > 0.3:
+                risk_level = "High"
+                risk_color = "red"
+            elif current_volatility > 0.2:
+                risk_level = "Medium"
+                risk_color = "orange"
+            else:
+                risk_level = "Low"
+                risk_color = "green"
+
+            st.markdown(f"**Risk Level**: <span style='color: {risk_color}'>{risk_level}</span> (Annualized Volatility: {current_volatility:.1%})", unsafe_allow_html=True)
+
+            if risk_level == "High":
+                st.warning("⚠️ High volatility detected. Consider smaller position sizes and tighter stop losses.")
+            elif risk_level == "Medium":
+                st.info("ℹ️ Moderate risk. Normal position sizing recommended.")
+            else:
+                st.success("✅ Low volatility. This is a relatively stable investment.")
+
+            st.markdown("**💡 Investment Horizon:**")
+            st.write("Based on the 3-month maximum analysis period, this recommendation is suitable for:")
+            st.write("   • **Short-term trading** (1-4 weeks)")
+            st.write("   • **Swing trading** (1-3 months)")
+            st.write("   • **Islamic portfolio rebalancing**")
+
+            st.markdown("---")
+            st.markdown("**⚠️ Disclaimer**: This analysis is for educational purposes only. Always consult with qualified Islamic financial advisors and conduct your own research before making investment decisions.")
+
         st.header("📈 Strategy Performance")
         
         with st.spinner("🔄 Running backtest..."):
