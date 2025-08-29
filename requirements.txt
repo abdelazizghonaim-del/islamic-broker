@@ -1,0 +1,21 @@
+streamlit>=1.23.0
+pandas>=2.0
+numpy>=1.25
+yfinance>=0.2.26
+plotly>=5.15
+scikit-learn>=1.2
+ta>=0.12.0
+requests>=2.31
+joblib>=1.3
+vaderSentiment>=3.3.2
+fpdf>=1.7.2
+python-dateutil>=2.8
+matplotlib>=3.8
+# Optional / advanced:
+xgboost>=1.7  # optional: for XGBoost models
+tensorflow>=2.12  # optional: for LSTM models
+snscrape>=0.5.4  # optional: for Twitter scraping
+praw>=7.7.0  # optional: Reddit scraping
+alpha_vantage>=2.3.1  # optional: AlphaVantage helper
+iexfinance>=0.5.9  # optional: IEX Cloud
+fmp-python>=3.0.0  # optional: FinancialModelingPrep wrapper
