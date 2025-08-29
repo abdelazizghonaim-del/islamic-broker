@@ -28,6 +28,82 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 import joblib
 
+# Error handling utilities for robust operation
+def safe_get_prediction(predictions, index=-1):
+    """Safely get prediction from predictions list with comprehensive error handling"""
+    try:
+        if predictions and isinstance(predictions, (list, tuple)) and len(predictions) > abs(index):
+            pred = predictions[index]
+            if isinstance(pred, dict) and 'signal' in pred:
+                return pred
+    except (IndexError, KeyError, TypeError, AttributeError):
+        pass
+
+    # Return default prediction if anything fails
+    return {
+        'signal': 'HOLD',
+        'confidence': 0.0,
+        'target_price': None,
+        'stop_loss': None
+    }
+
+def safe_dataframe_access(df, operation_func, default=None):
+    """Safely perform DataFrame operations with error handling"""
+    try:
+        if df is not None and not df.empty:
+            return operation_func(df)
+    except (IndexError, KeyError, AttributeError, TypeError):
+        pass
+    return default
+
+def safe_get_latest_value(df, column, default=0.0):
+    """Safely get the latest value from a DataFrame column"""
+    try:
+        if df is not None and not df.empty and column in df.columns and len(df) > 0:
+            return float(df[column].iloc[-1])
+    except (IndexError, KeyError, AttributeError, TypeError, ValueError):
+        pass
+    return default
+
+def safe_calculate_returns(df, column='Close', periods=5):
+    """Safely calculate returns with error handling"""
+    try:
+        if df is not None and not df.empty and column in df.columns and len(df) > periods:
+            return df[column].pct_change().tail(periods).mean()
+    except (IndexError, KeyError, AttributeError, TypeError, ValueError):
+        pass
+    return 0.0
+
+def safe_get_yearly_data(df, column='Close'):
+    """Safely get yearly performance data"""
+    try:
+        if df is not None and not df.empty and column in df.columns and len(df) > 252:
+            current_price = df[column].iloc[-1]
+            year_ago_price = df[column].iloc[-252]
+            yearly_high = df[column].tail(252).max()
+            yearly_low = df[column].tail(252).min()
+            yearly_return = ((current_price / year_ago_price) - 1) * 100 if year_ago_price != 0 else 0.0
+
+            return {
+                'yearly_return': yearly_return,
+                'yearly_high': yearly_high,
+                'yearly_low': yearly_low,
+                'current_price': current_price,
+                'position_in_range': ((current_price - yearly_low) / (yearly_high - yearly_low) * 100) if yearly_high != yearly_low else 50.0
+            }
+    except (IndexError, KeyError, AttributeError, TypeError, ValueError, ZeroDivisionError):
+        pass
+
+    return {
+        'yearly_return': 0.0,
+        'yearly_high': 0.0,
+        'yearly_low': 0.0,
+        'current_price': 0.0,
+        'position_in_range': 50.0
+    }
+
+
+
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -97,7 +173,7 @@ PROHIBITED_SECTORS = {
 # ================================================================
 
 st.set_page_config(
-    page_title="🕌 Islamic AI Broker Pro - EGX Edition",
+    page_title="🕌 Islamic AI Broker Pro",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -1194,7 +1270,13 @@ def main():
         if 'error' in ml_results:
             st.error(f"❌ ML Error: {ml_results['error']}")
         else:
-            predictions = ml_predictor.predict(selected_symbol, df)
+            try:
+                predictions = ml_predictor.predict(selected_symbol, df)
+                if not predictions:
+                    predictions = []
+            except Exception as e:
+                st.warning(f"⚠️ ML prediction unavailable: {str(e)}")
+                predictions = []
             
             if 'error' not in predictions:
                 prob_up = predictions['probability_up']
@@ -1285,7 +1367,7 @@ def main():
         
         # Strategy Backtesting
                 
-        # AI Recommendation & Analysis Explanation
+        # AI Recommendation & Analysis Explanation with Error Handling
         st.header("🧠 AI Recommendation & Analysis Explanation")
 
         rec_col1, rec_col2 = st.columns(2)
@@ -1293,45 +1375,54 @@ def main():
         with rec_col1:
             st.subheader("📋 Investment Recommendation")
 
-            # Determine overall recommendation based on multiple factors
+            # Initialize recommendation variables with safe defaults
             recommendation_score = 0
             recommendation_factors = []
 
-            # Factor 1: Sharia Compliance (Essential)
-            if is_compliant:
-                recommendation_score += 30
-                recommendation_factors.append("✅ **Sharia Compliant** - Meets Islamic investment criteria")
+            # Factor 1: Sharia Compliance (Essential) - Safe access
+            try:
+                if 'is_compliant' in locals() and is_compliant:
+                    recommendation_score += 30
+                    recommendation_factors.append("✅ **Sharia Compliant** - Meets Islamic investment criteria")
+                else:
+                    recommendation_score -= 50
+                    recommendation_factors.append("❌ **Not Sharia Compliant** - Violates Islamic principles")
+            except:
+                recommendation_factors.append("⚠️ **Sharia Status Unknown** - Unable to verify compliance")
+
+            # Factor 2: AI Prediction with comprehensive error handling
+            latest_prediction = safe_get_prediction(predictions if 'predictions' in locals() else [])
+
+            if latest_prediction['signal'] == 'BUY':
+                recommendation_score += 25
+                recommendation_factors.append(f"📈 **AI Signal: BUY** - Confidence: {latest_prediction['confidence']:.1%}")
+            elif latest_prediction['signal'] == 'SELL':
+                recommendation_score -= 25
+                recommendation_factors.append(f"📉 **AI Signal: SELL** - Confidence: {latest_prediction['confidence']:.1%}")
             else:
-                recommendation_score -= 50
-                recommendation_factors.append("❌ **Not Sharia Compliant** - Violates Islamic principles")
+                recommendation_factors.append(f"⏸️ **AI Signal: HOLD** - Confidence: {latest_prediction['confidence']:.1%}")
 
-            # Factor 2: AI Prediction
-            if predictions and len(predictions) > 0:
-                latest_prediction = predictions[-1]
-                if latest_prediction['signal'] == 'BUY':
-                    recommendation_score += 25
-                    recommendation_factors.append(f"📈 **AI Signal: BUY** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
-                elif latest_prediction['signal'] == 'SELL':
-                    recommendation_score -= 25
-                    recommendation_factors.append(f"📉 **AI Signal: SELL** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
+            # Factor 3: Technical Indicators with safe DataFrame access
+            try:
+                if 'df' in locals() and df is not None and not df.empty:
+                    rsi = safe_get_latest_value(df, 'RSI', 50.0)
+
+                    if rsi < 30:
+                        recommendation_score += 15
+                        recommendation_factors.append(f"🔵 **RSI Oversold** ({rsi:.1f}) - Potential buying opportunity")
+                    elif rsi > 70:
+                        recommendation_score -= 15
+                        recommendation_factors.append(f"🔴 **RSI Overbought** ({rsi:.1f}) - Consider taking profits")
+                    else:
+                        recommendation_factors.append(f"🟡 **RSI Neutral** ({rsi:.1f}) - No strong signal")
                 else:
-                    recommendation_factors.append(f"⏸️ **AI Signal: HOLD** - Confidence: {latest_prediction.get('confidence', 0):.1%}")
+                    recommendation_factors.append("⚠️ **Technical Data Unavailable**")
+            except Exception as e:
+                recommendation_factors.append("⚠️ **Technical Analysis Error**")
 
-            # Factor 3: Technical Indicators
-            latest_data = df.iloc[-1]
-            if 'RSI' in latest_data:
-                rsi = latest_data['RSI']
-                if rsi < 30:
-                    recommendation_score += 15
-                    recommendation_factors.append(f"🔵 **RSI Oversold** ({rsi:.1f}) - Potential buying opportunity")
-                elif rsi > 70:
-                    recommendation_score -= 15
-                    recommendation_factors.append(f"🔴 **RSI Overbought** ({rsi:.1f}) - Consider taking profits")
-                else:
-                    recommendation_factors.append(f"🟡 **RSI Neutral** ({rsi:.1f}) - No strong signal")
+            # Factor 4: Price trend with safe calculation
+            recent_returns = safe_calculate_returns(df if 'df' in locals() else None, 'Close', 20)
 
-            # Factor 4: Price trend (longer-term for 1-year analysis)
-            recent_returns = df['Close'].pct_change().tail(20).mean()  # 20-day average for better trend analysis
             if recent_returns > 0.015:
                 recommendation_score += 10
                 recommendation_factors.append(f"📈 **Strong Uptrend** - Average 20-day return: {recent_returns:.1%}")
@@ -1341,22 +1432,23 @@ def main():
             else:
                 recommendation_factors.append(f"➡️ **Sideways Movement** - Average 20-day return: {recent_returns:.1%}")
 
-            # Factor 5: Long-term performance (1-year analysis)
-            if len(df) > 252:  # If we have at least 1 year of data
-                yearly_return = ((df['Close'].iloc[-1] / df['Close'].iloc[-252]) - 1) * 100
-                if yearly_return > 15:
-                    recommendation_score += 15
-                    recommendation_factors.append(f"🚀 **Excellent 1-Year Performance** - Return: {yearly_return:.1%}")
-                elif yearly_return > 5:
-                    recommendation_score += 5
-                    recommendation_factors.append(f"📈 **Good 1-Year Performance** - Return: {yearly_return:.1%}")
-                elif yearly_return < -15:
-                    recommendation_score -= 15
-                    recommendation_factors.append(f"📉 **Poor 1-Year Performance** - Return: {yearly_return:.1%}")
-                else:
-                    recommendation_factors.append(f"➡️ **Moderate 1-Year Performance** - Return: {yearly_return:.1%}")
+            # Factor 5: Long-term performance (1-year analysis) with safe access
+            yearly_data = safe_get_yearly_data(df if 'df' in locals() else None)
+            yearly_return = yearly_data['yearly_return']
 
-            # Final recommendation
+            if yearly_return > 15:
+                recommendation_score += 15
+                recommendation_factors.append(f"🚀 **Excellent 1-Year Performance** - Return: {yearly_return:.1%}")
+            elif yearly_return > 5:
+                recommendation_score += 5
+                recommendation_factors.append(f"📈 **Good 1-Year Performance** - Return: {yearly_return:.1%}")
+            elif yearly_return < -15:
+                recommendation_score -= 15
+                recommendation_factors.append(f"📉 **Poor 1-Year Performance** - Return: {yearly_return:.1%}")
+            else:
+                recommendation_factors.append(f"➡️ **Moderate 1-Year Performance** - Return: {yearly_return:.1%}")
+
+            # Final recommendation with safe bounds checking
             if recommendation_score >= 50:
                 recommendation = "🟢 **STRONG BUY**"
                 rec_color = "green"
@@ -1389,25 +1481,30 @@ def main():
 
             st.markdown("**How this recommendation was determined:**")
 
+            # Sharia Compliance explanation with error handling
             st.markdown("**1. 🕌 Sharia Compliance Check (Weight: 30%)**")
-            if is_compliant:
-                st.success("This stock passes all Islamic investment criteria including debt ratios, interest income limits, and business activity screening.")
-            else:
-                st.error("This stock fails Sharia compliance due to:")
-                for issue in issues:
-                    st.write(f"   • {issue}")
+            try:
+                if 'is_compliant' in locals() and is_compliant:
+                    st.success("This stock passes all Islamic investment criteria including debt ratios, interest income limits, and business activity screening.")
+                elif 'is_compliant' in locals() and not is_compliant:
+                    st.error("This stock fails Sharia compliance. Please check the detailed compliance analysis above.")
+                else:
+                    st.warning("Sharia compliance status could not be determined.")
+            except:
+                st.warning("Unable to verify Sharia compliance at this time.")
 
+            # AI Prediction explanation
             st.markdown("**2. 🤖 AI Prediction Analysis (Weight: 25%)**")
-            if predictions and len(predictions) > 0:
-                latest_pred = predictions[-1]
-                st.info(f"Our machine learning model predicts a **{latest_pred['signal']}** signal with {latest_pred.get('confidence', 0):.1%} confidence based on:")
+            if latest_prediction and latest_prediction['confidence'] > 0:
+                st.info(f"Our machine learning model predicts a **{latest_prediction['signal']}** signal with {latest_prediction['confidence']:.1%} confidence based on:")
                 st.write("   • Technical indicators (RSI, MACD, Moving Averages)")
                 st.write("   • Price patterns and trends")
                 st.write("   • Volume analysis")
                 st.write("   • Historical performance patterns")
             else:
-                st.warning("AI prediction unavailable due to insufficient data.")
+                st.warning("AI prediction unavailable due to insufficient data or model errors.")
 
+            # Technical Analysis explanation
             st.markdown("**3. 📊 Technical Analysis (Weight: 25%)**")
             st.info("Technical indicators provide insights into:")
             st.write("   • **Momentum**: RSI indicates overbought/oversold conditions")
@@ -1415,27 +1512,40 @@ def main():
             st.write("   • **Volatility**: ATR measures price movement intensity")
             st.write("   • **Volume**: Trading activity confirms price movements")
 
+            # Risk Assessment with error handling
             st.markdown("**4. ⚖️ Risk Assessment (Weight: 20%)**")
-            current_volatility = df['Close'].pct_change().std() * (252**0.5)
-            if current_volatility > 0.3:
-                risk_level = "High"
-                risk_color = "red"
-            elif current_volatility > 0.2:
-                risk_level = "Medium"
-                risk_color = "orange"
-            else:
-                risk_level = "Low"
-                risk_color = "green"
+            try:
+                if 'df' in locals() and df is not None and not df.empty:
+                    current_volatility = safe_dataframe_access(
+                        df, 
+                        lambda x: x['Close'].pct_change().std() * (252**0.5), 
+                        0.2
+                    )
 
-            st.markdown(f"**Risk Level**: <span style='color: {risk_color}'>{risk_level}</span> (Annualized Volatility: {current_volatility:.1%})", unsafe_allow_html=True)
+                    if current_volatility > 0.3:
+                        risk_level = "High"
+                        risk_color = "red"
+                    elif current_volatility > 0.2:
+                        risk_level = "Medium"
+                        risk_color = "orange"
+                    else:
+                        risk_level = "Low"
+                        risk_color = "green"
 
-            if risk_level == "High":
-                st.warning("⚠️ High volatility detected. Consider smaller position sizes and tighter stop losses.")
-            elif risk_level == "Medium":
-                st.info("ℹ️ Moderate risk. Normal position sizing recommended.")
-            else:
-                st.success("✅ Low volatility. This is a relatively stable investment.")
+                    st.markdown(f"**Risk Level**: <span style='color: {risk_color}'>{risk_level}</span> (Annualized Volatility: {current_volatility:.1%})", unsafe_allow_html=True)
 
+                    if risk_level == "High":
+                        st.warning("⚠️ High volatility detected. Consider smaller position sizes and tighter stop losses.")
+                    elif risk_level == "Medium":
+                        st.info("ℹ️ Moderate risk. Normal position sizing recommended.")
+                    else:
+                        st.success("✅ Low volatility. This is a relatively stable investment.")
+                else:
+                    st.warning("Risk assessment unavailable due to insufficient data.")
+            except Exception as e:
+                st.warning("Unable to calculate risk metrics at this time.")
+
+            # Investment Horizon
             st.markdown("**💡 Investment Horizon (1-Year Analysis):**")
             st.write("Based on the comprehensive 1-year analysis, this recommendation is suitable for:")
             st.write("   • **Short-term trading** (1-4 weeks)")
@@ -1444,18 +1554,15 @@ def main():
             st.write("   • **Long-term Islamic portfolio building**")
             st.write("   • **Annual portfolio rebalancing**")
 
-            # Show 1-year performance summary
-            if len(df) > 252:
+            # 1-year performance summary with safe access
+            if yearly_data and yearly_data['yearly_return'] != 0:
                 st.markdown("**📈 1-Year Performance Summary:**")
-                yearly_high = df['Close'].tail(252).max()
-                yearly_low = df['Close'].tail(252).min()
-                current_price = df['Close'].iloc[-1]
-                yearly_return = ((current_price / df['Close'].iloc[-252]) - 1) * 100
-
-                st.write(f"   • **1-Year Return**: {yearly_return:.1%}")
-                st.write(f"   • **52-Week High**: {yearly_high:.2f} EGP")
-                st.write(f"   • **52-Week Low**: {yearly_low:.2f} EGP")
-                st.write(f"   • **Current Position**: {((current_price - yearly_low) / (yearly_high - yearly_low) * 100):.1f}% of 52-week range")
+                st.write(f"   • **1-Year Return**: {yearly_data['yearly_return']:.1%}")
+                st.write(f"   • **52-Week High**: {yearly_data['yearly_high']:.2f} EGP")
+                st.write(f"   • **52-Week Low**: {yearly_data['yearly_low']:.2f} EGP")
+                st.write(f"   • **Current Position**: {yearly_data['position_in_range']:.1f}% of 52-week range")
+            else:
+                st.info("1-year performance data unavailable - may be a newer stock or data limitation.")
 
             st.markdown("---")
             st.markdown("**⚠️ Disclaimer**: This analysis is for educational purposes only. The 1-year analysis provides comprehensive insights but past performance doesn't guarantee future results. Always consult with qualified Islamic financial advisors and conduct your own research before making investment decisions.")
