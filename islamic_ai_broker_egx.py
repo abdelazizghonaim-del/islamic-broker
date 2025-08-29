@@ -23,7 +23,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import requests
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, XGBClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from xgboost import XGBClassifier
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler, RobustScaler
