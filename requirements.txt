@@ -6,3 +6,15 @@ scikit-learn
 joblib
 streamlit
 plotly
+streamlit
+yfinance
+pandas
+numpy
+scikit-learn
+plotly
+requests
+joblib
+xgboost
+arabic-reshaper
+python-bidi
+
