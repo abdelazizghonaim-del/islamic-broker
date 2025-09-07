@@ -370,13 +370,15 @@ def top_movers_table(df: pd.DataFrame, topn=10):
 # -----------------------
 # MAIN APP
 # -----------------------
-def main():
-     # Initialize managers
+    # Initialize managers
     api_key = st.session_state.get("TWELVEDATA_API_KEY", TWELVEDATA_API_KEY)
     dm = DataManager(apikey=api_key)
     sharia = ShariaScreener(ShariaConfig(), dm)
     ml = MLPredictor()
     pf = Portfolio()
+
+def main():
+    
 
     st.set_page_config(APP_TITLE, layout="wide")
     st.title(APP_TITLE)
