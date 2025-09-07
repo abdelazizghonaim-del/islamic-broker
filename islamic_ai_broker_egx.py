@@ -77,7 +77,7 @@ class DataManager:
         self.apikey = (apikey or "").strip()
         self.session = requests.Session()
 
-    @st.cache_data(ttl=CACHE_TTL)
+     (ttl=CACHE_TTL)
     def get_time_series(self, symbol: str, interval: str = "1day", outputsize: int = 500) -> pd.DataFrame:
         """Return DataFrame with Open, High, Low, Close, Volume (or empty DataFrame)."""
         # Try TwelveData if API key provided
@@ -132,7 +132,7 @@ class DataManager:
 
         return pd.DataFrame()
 
-    @st.cache_data(ttl=CACHE_TTL)
+     (ttl=CACHE_TTL)
     def get_quote(self, symbol: str) -> Dict[str, Any]:
         """Quick price quote from TwelveData or yfinance."""
         if self.apikey:
@@ -153,7 +153,7 @@ class DataManager:
         except Exception:
             return {"price": None, "raw": {}}
 
-    @st.cache_data(ttl=3600)
+     (ttl=3600)
     def get_company_info(self, symbol: str) -> Dict[str, Any]:
         try:
             t = yf.Ticker(symbol)
