@@ -371,6 +371,13 @@ def top_movers_table(df: pd.DataFrame, topn=10):
 # MAIN APP
 # -----------------------
 def main():
+     # Initialize managers
+    api_key = st.session_state.get("TWELVEDATA_API_KEY", TWELVEDATA_API_KEY)
+    dm = DataManager(apikey=api_key)
+    sharia = ShariaScreener(ShariaConfig(), dm)
+    ml = MLPredictor()
+    pf = Portfolio()
+
     st.set_page_config(APP_TITLE, layout="wide")
     st.title(APP_TITLE)
     st.markdown("**Notes:** This demo uses TwelveData (if API key provided) and yfinance as fallback. For production-grade real-time EGX data, use a licensed feed.")
@@ -550,13 +557,20 @@ def main():
         total_val = pf.value(prices)
         st.metric("Total portfolio value", f"${total_val:,.2f}")
 
-    elif page == "Settings":
+       elif page == "Settings":
         st.header("⚙️ Settings & Keys")
-        st.markdown("TwelveData API Key (used for better EGX coverage). Provide your key or set environment variable `TWELVEDATA_API_KEY`.")
-        key = st.text_input("TwelveData API Key", value=TWELVEDATA_API_KEY, type="password")
-       if st.button("Save API Key (runtime)"):
-       st.session_state["TWELVEDATA_API_KEY"] = key.strip()
-       st.success("Saved for current session (will reset if app restarts).")
+        st.markdown(
+            "TwelveData API Key (used for better EGX coverage). "
+            "Provide your key here or set environment variable `TWELVEDATA_API_KEY`."
+        )
+
+        # Load from session state if available
+        current_key = st.session_state.get("TWELVEDATA_API_KEY", TWELVEDATA_API_KEY)
+        key = st.text_input("TwelveData API Key", value=current_key, type="password")
+
+        if st.button("Save API Key (runtime)"):
+            st.session_state["TWELVEDATA_API_KEY"] = key.strip()
+            st.success("Saved for current session (will reset if app restarts).")
 
         st.markdown("---")
         st.markdown("**Notes & Next steps for production**")
@@ -566,6 +580,7 @@ def main():
         - Add authentication, persistent DB, job scheduler for regular updates.
         - Consider microservice architecture for heavy ML backtesting.
         """)
+
 
     # footer
     st.markdown("---")
