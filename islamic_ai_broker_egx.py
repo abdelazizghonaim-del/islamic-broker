@@ -29,6 +29,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+api_key = st.session_state.get("TWELVEDATA_API_KEY", TWELVEDATA_API_KEY)
+dm = DataManager(apikey=api_key)
 
 # -----------------------
 # CONFIG
