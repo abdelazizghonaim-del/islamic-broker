@@ -555,8 +555,8 @@ def main():
         st.markdown("TwelveData API Key (used for better EGX coverage). Provide your key or set environment variable `TWELVEDATA_API_KEY`.")
         key = st.text_input("TwelveData API Key", value=TWELVEDATA_API_KEY, type="password")
        if st.button("Save API Key (runtime)"):
-    st.session_state["TWELVEDATA_API_KEY"] = key.strip()
-    st.success("Saved for current session (will reset if app restarts).")
+       st.session_state["TWELVEDATA_API_KEY"] = key.strip()
+       st.success("Saved for current session (will reset if app restarts).")
 
         st.markdown("---")
         st.markdown("**Notes & Next steps for production**")
